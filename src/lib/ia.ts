@@ -39,6 +39,8 @@ export async function appelerModele(
       model,
       messages,
       temperature: 0.5,
+      // Modèles gpt-oss : moins de jetons de réflexion, plus de place pour la réponse
+      reasoning_effort: "low",
       ...(options.schema && {
         response_format: {
           type: "json_schema",

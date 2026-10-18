@@ -5,7 +5,7 @@ import ListeBagages from "@/components/ListeBagages";
 import SuiviVoyage from "@/components/SuiviVoyage";
 import { formaterDate, formaterEuros } from "@/lib/format";
 import { creerClientServeur } from "@/lib/supabase/server";
-import { alerteErreur, carte } from "@/lib/ui";
+import { alerteAttention, alerteErreur, carte } from "@/lib/ui";
 import {
   nombreDeJours,
   type Bagage,
@@ -41,7 +41,7 @@ export default async function DetailVoyage({
   const { data: voyage } = await supabase
     .from("trips")
     .select(
-      "id, destination, start_date, end_date, budget, travelers, preferences, summary, status, error_message, created_at",
+      "id, origin, destination, start_date, end_date, budget, travelers, preferences, summary, transport_estimate, lodging_estimate, budget_advice, status, error_message, created_at",
     )
     .eq("id", id)
     .maybeSingle<Voyage>();
@@ -67,10 +67,15 @@ export default async function DetailVoyage({
 
   const jours = (donneesJours ?? []) as JourVoyage[];
   const bagages = (donneesBagages ?? []) as Bagage[];
-  const budgetEstime = jours.reduce(
+  const budgetSurPlace = jours.reduce(
     (total, jour) => total + jour.estimated_budget,
     0,
   );
+  const budgetTotal =
+    budgetSurPlace +
+    (voyage.transport_estimate ?? 0) +
+    (voyage.lodging_estimate ?? 0);
+  const nuits = nombreDeJours(voyage.start_date, voyage.end_date) - 1;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
@@ -102,8 +107,8 @@ export default async function DetailVoyage({
           <Info libelle="Budget" valeur={formaterEuros(voyage.budget)} />
           {voyage.status === "done" && (
             <Info
-              libelle="Estimation"
-              valeur={`≈ ${formaterEuros(budgetEstime)}`}
+              libelle="Total estimé"
+              valeur={`≈ ${formaterEuros(budgetTotal)}`}
             />
           )}
         </dl>
@@ -135,6 +140,41 @@ export default async function DetailVoyage({
               {voyage.summary}
             </p>
           )}
+          {voyage.transport_estimate !== null &&
+            voyage.lodging_estimate !== null && (
+              <section className={`${carte} mt-6 p-6`}>
+                <h2 className="text-xl font-semibold">💶 Budget estimé</h2>
+                <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+                  <Info
+                    libelle={`Transport aller-retour${voyage.origin ? ` depuis ${voyage.origin}` : ""}`}
+                    valeur={`≈ ${formaterEuros(voyage.transport_estimate)}`}
+                  />
+                  <Info
+                    libelle={`Hébergement (${nuits} nuit(s))`}
+                    valeur={`≈ ${formaterEuros(voyage.lodging_estimate)}`}
+                  />
+                  <Info
+                    libelle="Sur place"
+                    valeur={`≈ ${formaterEuros(budgetSurPlace)}`}
+                  />
+                  <Info
+                    libelle="Total estimé"
+                    valeur={`≈ ${formaterEuros(budgetTotal)}`}
+                  />
+                </dl>
+                {budgetTotal > voyage.budget && (
+                  <p className={`mt-4 ${alerteAttention}`}>
+                    Le total estimé dépasse votre budget d&apos;environ{" "}
+                    {formaterEuros(budgetTotal - voyage.budget)}.
+                  </p>
+                )}
+                {voyage.budget_advice && (
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                    {voyage.budget_advice}
+                  </p>
+                )}
+              </section>
+            )}
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
             <section>

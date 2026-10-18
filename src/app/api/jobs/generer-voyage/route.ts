@@ -9,6 +9,7 @@ import {
   type DemandeVoyage,
   type ItineraireGenere,
 } from "@/lib/voyage";
+import { rechercherLieux, type Lieu } from "@/lib/lieux";
 
 export const maxDuration = 60;
 
@@ -109,6 +110,9 @@ async function enregistrerItineraire(
     .from("trips")
     .update({
       summary: itineraire.summary,
+      transport_estimate: itineraire.transport_estimate,
+      lodging_estimate: itineraire.lodging_estimate,
+      budget_advice: itineraire.budget_advice,
       status: "done",
       error_message: null,
     })
@@ -130,7 +134,7 @@ async function traiter(request: Request) {
   const { data: voyage } = await supabase
     .from("trips")
     .select(
-      "id, user_id, destination, start_date, end_date, budget, travelers, preferences, status",
+      "id, user_id, origin, destination, start_date, end_date, budget, travelers, preferences, status",
     )
     .eq("id", tripId)
     .maybeSingle<VoyageATraiter>();
@@ -141,7 +145,18 @@ async function traiter(request: Request) {
   }
 
   try {
-    const itineraire = await genererVoyage(voyage);
+    // Effet secondaire : sans liste de lieux, la génération continue sans noms de restaurants
+    let lieux: Lieu[] = [];
+    try {
+      lieux = await rechercherLieux(voyage.destination);
+    } catch (erreur) {
+      console.error(
+        "Recherche des lieux impossible, génération sans liste :",
+        erreur,
+      );
+    }
+
+    const itineraire = await genererVoyage(voyage, lieux);
     await enregistrerItineraire(supabase, voyage, itineraire);
     await notifier(supabase, voyage, "done");
 

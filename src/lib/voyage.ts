@@ -19,6 +19,7 @@ export const CATEGORIES_BAGAGES = [
 ];
 
 export type DemandeVoyage = {
+  origin: string;
   destination: string;
   start_date: string;
   end_date: string;
@@ -42,6 +43,9 @@ export type BagageGenere = {
 
 export type ItineraireGenere = {
   summary: string;
+  transport_estimate: number;
+  lodging_estimate: number;
+  budget_advice: string;
   days: JourGenere[];
   packing: BagageGenere[];
 };
@@ -49,6 +53,9 @@ export type ItineraireGenere = {
 export type Voyage = DemandeVoyage & {
   id: string;
   summary: string | null;
+  transport_estimate: number | null;
+  lodging_estimate: number | null;
+  budget_advice: string | null;
   status: StatutVoyage;
   error_message: string | null;
   created_at: string;
@@ -99,6 +106,15 @@ export function validerDemande(
     };
   }
 
+  const origin = typeof b.origin === "string" ? b.origin.trim() : "";
+  if (
+    origin.length < LIMITES.destinationMin ||
+    origin.length > LIMITES.destinationMax
+  ) {
+    return {
+      erreur: `La ville de départ est obligatoire (${LIMITES.destinationMax} caractères maximum).`,
+    };
+  }
   const debut = b.start_date;
   const fin = b.end_date;
   if (!estDateValide(debut) || !estDateValide(fin)) {
@@ -149,6 +165,7 @@ export function validerDemande(
 
   return {
     demande: {
+      origin,
       destination,
       start_date: debut,
       end_date: fin,

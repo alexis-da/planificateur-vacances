@@ -3,6 +3,7 @@ import type { Controle } from "@/lib/statut";
 import { redis } from "@/lib/limitation";
 import { qstash } from "@/lib/qstash";
 import { creerClientAdmin } from "@/lib/supabase/admin";
+import { localiser } from "@/lib/lieux";
 
 const controleVercel: Controle = {
   service: "Vercel",
@@ -198,6 +199,17 @@ const controleEmail: Controle = {
     );
   },
 };
+const controleLieux: Controle = {
+  service: "Geoapify",
+  description: "Restaurants et lieux réels de la destination",
+  verifier: async () => {
+    const lieu = await localiser("Lisbonne");
+    if (!lieu) {
+      throw new Error("Aucun résultat pour la destination de test");
+    }
+    return `Service joignable · Test : ${lieu.nom}`;
+  },
+};
 
 const VARIABLES_REQUISES = [
   "AI_BASE_URL",
@@ -215,6 +227,7 @@ const VARIABLES_REQUISES = [
   "QSTASH_CURRENT_SIGNING_KEY",
   "QSTASH_NEXT_SIGNING_KEY",
   "RESEND_API_KEY",
+  "GEOAPIFY_API_KEY",
 ];
 
 const controleSecrets: Controle = {
@@ -247,5 +260,6 @@ export const CONTROLES: Controle[] = [
   controleRedis,
   controleQStash,
   controleEmail,
+  controleLieux,
   controleSecrets,
 ];

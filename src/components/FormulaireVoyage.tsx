@@ -21,6 +21,7 @@ type Etat =
   | { type: "quota"; message: string };
 
 const CHAMPS_VIDES = {
+  origin: "",
   destination: "",
   start_date: "",
   end_date: "",
@@ -145,7 +146,21 @@ export default function FormulaireVoyage() {
   return (
     <form onSubmit={envoyer} className={`${carte} p-6 md:p-8`} noValidate>
       <fieldset disabled={chargement} className="grid gap-5 sm:grid-cols-2">
-        <div className="sm:col-span-2">
+        <div>
+          <label htmlFor="origin" className={libelle}>
+            Ville de départ
+          </label>
+          <input
+            id="origin"
+            value={champs.origin}
+            onChange={modifier("origin")}
+            maxLength={LIMITES.destinationMax}
+            placeholder="Exemple : Paris"
+            className={champ}
+          />
+        </div>
+
+        <div>
           <label htmlFor="destination" className={libelle}>
             Destination
           </label>

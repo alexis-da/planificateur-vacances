@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import type { ResultatControle, Statut } from "@/lib/statut";
-import { alerteErreur, boutonPrincipal, carte } from "@/lib/ui";
+import { CircleAlert, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { boutonLarge, conteneur, titrePage } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 type ReponseStatut = {
   verifieLe: string;
@@ -13,10 +18,10 @@ type ReponseStatut = {
 const AFFICHAGE: Record<Statut, { libelle: string; classes: string }> = {
   operationnel: {
     libelle: "Opérationnel",
-    classes: "bg-emerald-100 text-emerald-800",
+    classes: "border-emerald-200 bg-emerald-50 text-emerald-800",
   },
-  degrade: { libelle: "Dégradé", classes: "bg-amber-100 text-amber-800" },
-  en_panne: { libelle: "En panne", classes: "bg-red-100 text-red-800" },
+  degrade: { libelle: "Dégradé", classes: "border-amber-200 bg-amber-50 text-amber-800" },
+  en_panne: { libelle: "En panne", classes: "border-red-200 bg-red-50 text-red-800" },
 };
 
 const MESSAGE_GLOBAL: Record<Statut, string> = {
@@ -57,56 +62,58 @@ export default function TableauStatut() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <main className={`${conteneur} py-10 md:py-14`}>
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Administration</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className={titrePage}>Administration</h1>
+          <p className="mt-1 text-muted-foreground">
             État des services utilisés par l&apos;application.
           </p>
         </div>
-        <button
-          onClick={actualiser}
-          disabled={chargement}
-          className={boutonPrincipal}
-        >
+        <Button onClick={actualiser} disabled={chargement} variant="outline" className={boutonLarge}>
+          <RefreshCw className={cn(chargement && "animate-spin")} aria-hidden />
           {chargement ? "Vérification…" : "Relancer les tests"}
-        </button>
+        </Button>
       </div>
 
-      {erreur && <p className={`mt-6 ${alerteErreur}`}>{erreur}</p>}
+      {erreur && (
+        <Alert variant="destructive" className="mt-8 px-4 py-3">
+          <CircleAlert aria-hidden />
+          <AlertDescription>{erreur}</AlertDescription>
+        </Alert>
+      )}
 
       {donnees && (
         <>
           <p
-            className={`mt-6 rounded-xl p-4 font-medium ${AFFICHAGE[donnees.statutGlobal].classes}`}
+            className={cn(
+              "mt-8 rounded-xl border px-4 py-3 font-medium",
+              AFFICHAGE[donnees.statutGlobal].classes,
+            )}
           >
             {MESSAGE_GLOBAL[donnees.statutGlobal]}
           </p>
 
-          <ul className="mt-6 grid gap-4 md:grid-cols-2">
+          <ul className="mt-6 divide-y rounded-2xl border">
             {donnees.services.map((s) => (
-              <li key={s.service} className={`${carte} p-5`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold">{s.service}</p>
-                    <p className="text-sm text-slate-500">{s.description}</p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${AFFICHAGE[s.statut].classes}`}
-                  >
-                    {AFFICHAGE[s.statut].libelle}
-                  </span>
+              <li key={s.service} className="grid gap-2 px-5 py-4 sm:grid-cols-[220px_1fr_auto] sm:items-center sm:gap-6">
+                <div>
+                  <p className="font-medium">{s.service}</p>
+                  <p className="text-sm text-muted-foreground">{s.description}</p>
                 </div>
-                <p className="mt-3 text-sm text-slate-700">{s.message}</p>
-                <p className="mt-2 text-xs text-slate-400">{s.latenceMs} ms</p>
+                <p className="text-sm">
+                  {s.message}
+                  <span className="ml-2 text-muted-foreground">{s.latenceMs} ms</span>
+                </p>
+                <Badge variant="outline" className={cn("h-6 px-2.5", AFFICHAGE[s.statut].classes)}>
+                  {AFFICHAGE[s.statut].libelle}
+                </Badge>
               </li>
             ))}
           </ul>
 
-          <p className="mt-6 text-sm text-slate-500">
-            Dernière vérification :{" "}
-            {new Date(donnees.verifieLe).toLocaleString("fr-FR")}
+          <p className="mt-6 text-sm text-muted-foreground">
+            Dernière vérification : {new Date(donnees.verifieLe).toLocaleString("fr-FR")}
           </p>
         </>
       )}

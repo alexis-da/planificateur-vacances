@@ -1,25 +1,22 @@
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { StatutVoyage } from "@/lib/voyage";
 
 const AFFICHAGE: Record<StatutVoyage, { libelle: string; classes: string }> = {
-  pending: {
-    libelle: "En préparation",
-    classes: "bg-amber-100 text-amber-800",
-  },
-  done: { libelle: "Prêt", classes: "bg-emerald-100 text-emerald-800" },
-  error: { libelle: "Échec", classes: "bg-red-100 text-red-800" },
+  pending: { libelle: "En préparation", classes: "bg-amber-50 text-amber-800 border-amber-200" },
+  done: { libelle: "Prêt", classes: "bg-emerald-50 text-emerald-800 border-emerald-200" },
+  error: { libelle: "Échec", classes: "bg-red-50 text-red-800 border-red-200" },
 };
 
 export default function BadgeStatut({ statut }: { statut: StatutVoyage }) {
   const { libelle, classes } = AFFICHAGE[statut];
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${classes}`}
-    >
+    <Badge variant="outline" className={cn("h-6 px-2.5", classes)}>
       {statut === "pending" && (
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
+        <span className="size-1.5 animate-pulse rounded-full bg-amber-500" aria-hidden />
       )}
       {libelle}
-    </span>
+    </Badge>
   );
 }

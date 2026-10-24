@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Loader2, TriangleAlert } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { creerClientNavigateur } from "@/lib/supabase/client";
-import { alerteAttention, carte } from "@/lib/ui";
 
 // S'abonne aux changements du voyage et recharge la page dès qu'il n'est plus en préparation
 export default function SuiviVoyage({ id }: { id: string }) {
@@ -58,19 +59,19 @@ export default function SuiviVoyage({ id }: { id: string }) {
   }, [id, router]);
 
   return (
-    <section
-      className={`${carte} mt-6 flex flex-col items-center p-10 text-center`}
-    >
-      <span
-        aria-hidden
-        className="h-10 w-10 animate-spin rounded-full border-4 border-teal-100 border-t-teal-600"
-      />
-      <h2 className="mt-4 text-xl font-semibold">Itinéraire en préparation…</h2>
-      <p className="mt-2 max-w-md text-sm text-slate-600">
-        L&apos;IA compose vos journées et votre liste de bagages. Cette page se
-        mettra à jour automatiquement, et un e-mail vous préviendra.
+    <section className="mt-10 flex flex-col items-center rounded-2xl border px-6 py-14 text-center">
+      <Loader2 className="size-9 animate-spin text-primary" aria-hidden />
+      <h2 className="mt-5 text-xl font-semibold">Votre itinéraire est en préparation</h2>
+      <p className="mt-2 max-w-md text-muted-foreground">
+        Nous cherchons de vrais lieux, composons vos journées et estimons votre budget.
+        Cette page se mettra à jour toute seule, et un e-mail vous préviendra.
       </p>
-      {erreur && <p className={`mt-4 ${alerteAttention}`}>{erreur}</p>}
+      {erreur && (
+        <Alert className="mt-6 max-w-md border-amber-200 bg-amber-50 px-4 py-3 text-left text-amber-900">
+          <TriangleAlert aria-hidden />
+          <AlertDescription className="text-amber-800">{erreur}</AlertDescription>
+        </Alert>
+      )}
     </section>
   );
 }

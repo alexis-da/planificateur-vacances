@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { CircleAlert, MailCheck } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { creerClientNavigateur } from "@/lib/supabase/client";
-import {
-  alerteErreur,
-  alerteSucces,
-  boutonPrincipal,
-  champ,
-  libelle,
-} from "@/lib/ui";
+import { boutonLarge, champ } from "@/lib/ui";
 
 export default function FormulaireConnexion({
   erreurLien,
@@ -50,20 +49,22 @@ export default function FormulaireConnexion({
 
   if (envoye) {
     return (
-      <p className={`mt-6 ${alerteSucces}`}>
-        Un lien de connexion vient d&apos;être envoyé à <strong>{email}</strong>
-        . Ouvrez-le dans ce même navigateur.
-      </p>
+      <Alert className="mt-6 border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
+        <MailCheck aria-hidden />
+        <AlertTitle>Vérifiez votre boîte de réception</AlertTitle>
+        <AlertDescription className="text-emerald-800">
+          Un lien de connexion vient d&apos;être envoyé à <strong>{email}</strong>.
+          Ouvrez-le dans ce même navigateur.
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
     <form onSubmit={envoyer} className="mt-6 flex flex-col gap-4">
-      <div>
-        <label htmlFor="email" className={libelle}>
-          Adresse e-mail
-        </label>
-        <input
+      <div className="grid gap-2">
+        <Label htmlFor="email">Adresse e-mail</Label>
+        <Input
           id="email"
           type="email"
           required
@@ -75,15 +76,16 @@ export default function FormulaireConnexion({
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={envoi || email === ""}
-        className={boutonPrincipal}
-      >
+      <Button type="submit" disabled={envoi || email === ""} className={boutonLarge}>
         {envoi ? "Envoi en cours…" : "Recevoir un lien de connexion"}
-      </button>
+      </Button>
 
-      {erreur && <p className={alerteErreur}>{erreur}</p>}
+      {erreur && (
+        <Alert variant="destructive" className="px-4 py-3">
+          <CircleAlert aria-hidden />
+          <AlertDescription>{erreur}</AlertDescription>
+        </Alert>
+      )}
     </form>
   );
 }

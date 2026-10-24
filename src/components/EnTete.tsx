@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { Plane } from "lucide-react";
 import BoutonDeconnexion from "@/components/BoutonDeconnexion";
 import { estAdministrateur } from "@/lib/admin";
 import { creerClientServeur } from "@/lib/supabase/server";
+import { conteneur } from "@/lib/ui";
 
 const lienNavigation =
-  "rounded-lg px-3 py-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900";
+  "rounded-full px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted";
 
 export default async function EnTete() {
   const supabase = await creerClientServeur();
@@ -12,40 +14,35 @@ export default async function EnTete() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return null;
-  }
-
   return (
-    <header className="sticky top-0 z-10 border-b border-slate-200/70 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span
-            aria-hidden
-            className="grid h-8 w-8 place-items-center rounded-lg bg-linear-to-br from-teal-500 to-sky-500 text-base text-white"
-          >
-            ✈
-          </span>
-          <span className="text-base tracking-tight">Escapade</span>
+    <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
+      <div className={`${conteneur} flex h-18 items-center justify-between gap-4`}>
+        <Link href="/" className="flex items-center gap-2 text-primary">
+          <Plane className="size-6 -rotate-45" aria-hidden />
+          <span className="text-xl font-bold tracking-tight">escapade</span>
         </Link>
 
-        <nav className="flex flex-wrap items-center gap-1">
-          <Link href="/" className={lienNavigation}>
-            Nouveau voyage
-          </Link>
-          <Link href="/voyages" className={lienNavigation}>
-            Mes voyages
-          </Link>
-          {estAdministrateur(user.email) && (
-            <Link href="/admin" className={lienNavigation}>
-              Admin
+        {user && (
+          <nav className="flex items-center gap-1">
+            <Link href="/" className={`${lienNavigation} hidden sm:inline-flex`}>
+              Nouveau voyage
             </Link>
-          )}
-          <span className="ml-2 hidden text-slate-400 md:inline">
-            {user.email}
-          </span>
-          <BoutonDeconnexion />
-        </nav>
+            <Link href="/voyages" className={lienNavigation}>
+              Mes voyages
+            </Link>
+            {estAdministrateur(user.email) && (
+              <Link href="/admin" className={lienNavigation}>
+                Admin
+              </Link>
+            )}
+            <div className="ml-2 flex items-center gap-3 rounded-full border py-1 pr-1 pl-4 shadow-xs">
+              <span className="hidden max-w-48 truncate text-sm text-muted-foreground lg:inline">
+                {user.email}
+              </span>
+              <BoutonDeconnexion />
+            </div>
+          </nav>
+        )}
       </div>
     </header>
   );

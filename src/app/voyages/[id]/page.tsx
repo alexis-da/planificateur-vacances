@@ -1,31 +1,32 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronLeft, CircleAlert, Moon, Sun, Sunrise, TriangleAlert } from "lucide-react";
 import BadgeStatut from "@/components/BadgeStatut";
 import ListeBagages from "@/components/ListeBagages";
 import SuiviVoyage from "@/components/SuiviVoyage";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { formaterDate, formaterEuros } from "@/lib/format";
 import { creerClientServeur } from "@/lib/supabase/server";
-import { alerteAttention, alerteErreur, carte } from "@/lib/ui";
-import {
-  nombreDeJours,
-  type Bagage,
-  type JourVoyage,
-  type Voyage,
-} from "@/lib/voyage";
+import { teinte } from "@/lib/teinte";
+import { conteneur } from "@/lib/ui";
+import { cn } from "@/lib/utils";
+import { nombreDeJours, type Bagage, type JourVoyage, type Voyage } from "@/lib/voyage";
 
 export const dynamic = "force-dynamic";
 
 const MOMENTS = [
-  { cle: "morning", libelle: "Matin", icone: "🌅" },
-  { cle: "afternoon", libelle: "Après-midi", icone: "☀️" },
-  { cle: "evening", libelle: "Soir", icone: "🌙" },
+  { cle: "morning", libelle: "Matin", icone: Sunrise },
+  { cle: "afternoon", libelle: "Après-midi", icone: Sun },
+  { cle: "evening", libelle: "Soir", icone: Moon },
 ] as const;
 
-function Info({ libelle, valeur }: { libelle: string; valeur: string }) {
+function LigneBudget({ libelle, montant }: { libelle: string; montant: number }) {
   return (
-    <div>
-      <dt className="text-slate-500">{libelle}</dt>
-      <dd className="mt-0.5 font-semibold text-slate-900">{valeur}</dd>
+    <div className="flex justify-between gap-4">
+      <dt className="text-muted-foreground">{libelle}</dt>
+      <dd>{formaterEuros(montant)}</dd>
     </div>
   );
 }
@@ -53,9 +54,7 @@ export default async function DetailVoyage({
   const [{ data: donneesJours }, { data: donneesBagages }] = await Promise.all([
     supabase
       .from("trip_days")
-      .select(
-        "id, day_number, date, morning, afternoon, evening, estimated_budget",
-      )
+      .select("id, day_number, date, morning, afternoon, evening, estimated_budget")
       .eq("trip_id", id)
       .order("day_number"),
     supabase
@@ -67,127 +66,85 @@ export default async function DetailVoyage({
 
   const jours = (donneesJours ?? []) as JourVoyage[];
   const bagages = (donneesBagages ?? []) as Bagage[];
-  const budgetSurPlace = jours.reduce(
-    (total, jour) => total + jour.estimated_budget,
-    0,
-  );
+  const budgetSurPlace = jours.reduce((total, jour) => total + jour.estimated_budget, 0);
   const budgetTotal =
-    budgetSurPlace +
-    (voyage.transport_estimate ?? 0) +
-    (voyage.lodging_estimate ?? 0);
-  const nuits = nombreDeJours(voyage.start_date, voyage.end_date) - 1;
+    budgetSurPlace + (voyage.transport_estimate ?? 0) + (voyage.lodging_estimate ?? 0);
+  const duree = nombreDeJours(voyage.start_date, voyage.end_date);
+  const nuits = duree - 1;
+  const budgetComplet = voyage.transport_estimate !== null && voyage.lodging_estimate !== null;
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className={`${conteneur} py-8 md:py-10`}>
       <Link
         href="/voyages"
-        className="text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
       >
-        ← Mes voyages
+        <ChevronLeft className="size-4" aria-hidden />
+        Mes voyages
       </Link>
 
-      <header className={`${carte} mt-4 overflow-hidden`}>
-        <div className="bg-linear-to-br from-teal-500 to-sky-500 px-6 py-8 text-white md:px-8">
-          <BadgeStatut statut={voyage.status} />
-          <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">
+      <header className="mt-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
             {voyage.destination}
           </h1>
-          <p className="mt-1 text-white/90">
-            Du {formaterDate(voyage.start_date)} au{" "}
-            {formaterDate(voyage.end_date)}
-          </p>
+          <BadgeStatut statut={voyage.status} />
         </div>
-
-        <dl className="grid grid-cols-2 gap-4 px-6 py-5 text-sm sm:grid-cols-4 md:px-8">
-          <Info
-            libelle="Durée"
-            valeur={`${nombreDeJours(voyage.start_date, voyage.end_date)} jour(s)`}
-          />
-          <Info libelle="Voyageurs" valeur={String(voyage.travelers)} />
-          <Info libelle="Budget" valeur={formaterEuros(voyage.budget)} />
-          {voyage.status === "done" && (
-            <Info
-              libelle="Total estimé"
-              valeur={`≈ ${formaterEuros(budgetTotal)}`}
-            />
-          )}
-        </dl>
-
-        {voyage.preferences && (
-          <p className="border-t border-slate-200 px-6 py-4 text-sm text-slate-600 md:px-8">
-            <span className="font-medium text-slate-800">Envies : </span>
-            {voyage.preferences}
-          </p>
-        )}
+        <p className="mt-2 text-muted-foreground">
+          {formaterDate(voyage.start_date)} – {formaterDate(voyage.end_date)} · {duree} jour(s)
+          · {voyage.travelers} voyageur(s)
+          {voyage.origin && ` · depuis ${voyage.origin}`}
+        </p>
       </header>
+
+      <div
+        className={cn(
+          "mt-6 flex h-40 items-end rounded-2xl p-6 md:h-56 md:p-8",
+          teinte(voyage.destination),
+        )}
+      >
+        <p className="max-w-2xl text-lg font-medium md:text-xl">
+          {voyage.preferences ? `Vos envies : ${voyage.preferences}` : "Un voyage à votre rythme."}
+        </p>
+      </div>
 
       {voyage.status === "pending" && <SuiviVoyage id={voyage.id} />}
 
       {voyage.status === "error" && (
-        <div className={`mt-6 ${alerteErreur}`}>
-          <p className="font-semibold">La préparation de ce voyage a échoué.</p>
-          <p className="mt-1">{voyage.error_message ?? "Erreur inconnue."}</p>
-          <Link href="/" className="mt-3 inline-block font-medium underline">
-            Réessayer avec un nouveau voyage
-          </Link>
-        </div>
+        <Alert variant="destructive" className="mt-10 px-4 py-3">
+          <CircleAlert aria-hidden />
+          <AlertTitle>La préparation de ce voyage a échoué</AlertTitle>
+          <AlertDescription>
+            <p>{voyage.error_message ?? "Erreur inconnue."}</p>
+            <Link href="/" className="font-medium">
+              Réessayer avec un nouveau voyage
+            </Link>
+          </AlertDescription>
+        </Alert>
       )}
 
       {voyage.status === "done" && (
-        <>
-          {voyage.summary && (
-            <p className={`${carte} mt-6 p-6 leading-relaxed text-slate-700`}>
-              {voyage.summary}
-            </p>
-          )}
-          {voyage.transport_estimate !== null &&
-            voyage.lodging_estimate !== null && (
-              <section className={`${carte} mt-6 p-6`}>
-                <h2 className="text-xl font-semibold">💶 Budget estimé</h2>
-                <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-                  <Info
-                    libelle={`Transport aller-retour${voyage.origin ? ` depuis ${voyage.origin}` : ""}`}
-                    valeur={`≈ ${formaterEuros(voyage.transport_estimate)}`}
-                  />
-                  <Info
-                    libelle={`Hébergement (${nuits} nuit(s))`}
-                    valeur={`≈ ${formaterEuros(voyage.lodging_estimate)}`}
-                  />
-                  <Info
-                    libelle="Sur place"
-                    valeur={`≈ ${formaterEuros(budgetSurPlace)}`}
-                  />
-                  <Info
-                    libelle="Total estimé"
-                    valeur={`≈ ${formaterEuros(budgetTotal)}`}
-                  />
-                </dl>
-                {budgetTotal > voyage.budget && (
-                  <p className={`mt-4 ${alerteAttention}`}>
-                    Le total estimé dépasse votre budget d&apos;environ{" "}
-                    {formaterEuros(budgetTotal - voyage.budget)}.
-                  </p>
-                )}
-                {voyage.budget_advice && (
-                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
-                    {voyage.budget_advice}
-                  </p>
-                )}
+        <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_360px] lg:items-start">
+          <div>
+            {voyage.summary && (
+              <section>
+                <h2 className="text-xl font-semibold">Votre voyage en bref</h2>
+                <p className="mt-3 text-base leading-relaxed">{voyage.summary}</p>
               </section>
             )}
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
+            <Separator className="my-10" />
+
             <section>
-              <h2 className="text-xl font-semibold">🗺️ Itinéraire</h2>
-              <ol className="mt-4 grid gap-4">
-                {jours.map((jour) => (
-                  <li key={jour.id} className={`${carte} p-5`}>
+              <h2 className="text-xl font-semibold">Itinéraire jour par jour</h2>
+              <ol className="mt-6">
+                {jours.map((jour, index) => (
+                  <li key={jour.id}>
+                    {index > 0 && <Separator className="my-8" />}
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <h3 className="font-semibold">
+                      <h3 className="text-lg font-semibold">
                         Jour {jour.day_number}
-                        <span className="font-normal text-slate-500">
-                          {" "}
-                          ·{" "}
+                        <span className="ml-2 font-normal text-muted-foreground first-letter:uppercase">
                           {formaterDate(jour.date, {
                             weekday: "long",
                             day: "numeric",
@@ -195,23 +152,20 @@ export default async function DetailVoyage({
                           })}
                         </span>
                       </h3>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                        ≈ {formaterEuros(jour.estimated_budget)}
+                      <span className="text-sm text-muted-foreground">
+                        environ {formaterEuros(jour.estimated_budget)}
                       </span>
                     </div>
-
-                    <dl className="mt-4 grid gap-3">
-                      {MOMENTS.map((moment) => (
-                        <div
-                          key={moment.cle}
-                          className="grid gap-1 sm:grid-cols-[120px_1fr]"
-                        >
-                          <dt className="text-sm font-medium text-teal-700">
-                            {moment.icone} {moment.libelle}
-                          </dt>
-                          <dd className="text-sm text-slate-700">
-                            {jour[moment.cle]}
-                          </dd>
+                    <dl className="mt-4 grid gap-4">
+                      {MOMENTS.map(({ cle, libelle, icone: Icone }) => (
+                        <div key={cle} className="grid grid-cols-[24px_1fr] gap-x-3">
+                          <Icone className="mt-0.5 size-5 text-muted-foreground" aria-hidden />
+                          <div>
+                            <dt className="font-medium">{libelle}</dt>
+                            <dd className="mt-0.5 leading-relaxed text-muted-foreground">
+                              {jour[cle]}
+                            </dd>
+                          </div>
                         </div>
                       ))}
                     </dl>
@@ -220,16 +174,70 @@ export default async function DetailVoyage({
               </ol>
             </section>
 
-            <aside className="lg:sticky lg:top-20">
-              <ListeBagages bagagesInitiaux={bagages} />
-            </aside>
+            <p className="mt-10 text-sm text-muted-foreground">
+              Suggestions et budgets indicatifs générés par IA : vérifiez horaires, prix et
+              disponibilités avant de réserver.
+            </p>
           </div>
 
-          <p className="mt-6 text-xs text-slate-500">
-            Suggestions et budgets indicatifs générés par IA : vérifiez
-            horaires, prix et disponibilités avant de réserver.
-          </p>
-        </>
+          <aside className="grid gap-6 lg:sticky lg:top-28">
+            {budgetComplet && (
+              <Card className="rounded-2xl border py-6 shadow-[0_6px_20px_rgba(0,0,0,0.08)] ring-0">
+                <CardContent className="px-6">
+                  <p className="text-sm text-muted-foreground">Budget estimé</p>
+                  <p className="mt-1 text-2xl font-semibold">
+                    {formaterEuros(budgetTotal)}
+                    <span className="ml-1 text-base font-normal text-muted-foreground">
+                      pour {voyage.travelers} voyageur(s)
+                    </span>
+                  </p>
+
+                  <dl className="mt-5 grid gap-3 text-sm">
+                    <LigneBudget
+                      libelle="Transport aller-retour"
+                      montant={voyage.transport_estimate ?? 0}
+                    />
+                    <LigneBudget
+                      libelle={`Hébergement, ${nuits} nuit(s)`}
+                      montant={voyage.lodging_estimate ?? 0}
+                    />
+                    <LigneBudget libelle="Dépenses sur place" montant={budgetSurPlace} />
+                  </dl>
+
+                  <Separator className="my-4" />
+
+                  <dl className="grid gap-2 text-sm">
+                    <div className="flex justify-between gap-4 font-semibold">
+                      <dt>Total estimé</dt>
+                      <dd>{formaterEuros(budgetTotal)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Votre budget</dt>
+                      <dd>{formaterEuros(voyage.budget)}</dd>
+                    </div>
+                  </dl>
+
+                  {budgetTotal > voyage.budget && (
+                    <Alert className="mt-4 border-amber-200 bg-amber-50 px-3 py-2.5 text-amber-900">
+                      <TriangleAlert aria-hidden />
+                      <AlertDescription className="text-amber-800">
+                        Dépassement d&apos;environ {formaterEuros(budgetTotal - voyage.budget)}.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {voyage.budget_advice && (
+                    <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                      {voyage.budget_advice}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            <ListeBagages bagagesInitiaux={bagages} />
+          </aside>
+        </div>
       )}
     </main>
   );

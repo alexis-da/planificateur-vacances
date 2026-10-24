@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { creerClientNavigateur } from "@/lib/supabase/client";
 
 export default function BoutonDeconnexion() {
@@ -13,11 +15,14 @@ export default function BoutonDeconnexion() {
   }
 
   return (
-    <button
+    <Button
+      variant="secondary"
       onClick={deconnecter}
-      className="ml-1 rounded-lg px-3 py-1.5 text-slate-500 transition hover:bg-red-50 hover:text-red-700"
+      className="h-8 rounded-full px-3"
+      aria-label="Se déconnecter"
     >
-      Se déconnecter
-    </button>
+      <LogOut aria-hidden />
+      <span className="hidden sm:inline">Déconnexion</span>
+    </Button>
   );
 }

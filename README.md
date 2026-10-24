@@ -55,6 +55,8 @@ Infisical : secrets synchronisés vers Vercel et injectés en local
 
 **Page /admin.** Réservée aux adresses listées dans `ADMIN_EMAILS` (sinon 404). Elle contrôle chaque service avec un délai maximal de 5 s : Vercel, modèle d'IA, Supabase Database (nombre de voyages, en préparation, en échec), Auth et Realtime, Upstash Redis et QStash, Resend, Geoapify, Infisical (variables manquantes).
 
+**Interface.** Design clair et sobre, inspiré des sites de réservation de voyage : fond blanc, texte anthracite, une seule couleur d'accent (corail), typographie DM Sans, champs « à étiquette intégrée » comme sur les moteurs de recherche de séjours, et un récapitulatif du budget présenté comme un détail de prix. Les éléments d'interface viennent de [shadcn/ui](https://ui.shadcn.com) (boutons, cartes, champs, badges, cases à cocher, barre de progression, alertes), des composants open source copiés dans `src/components/ui/`, et les pictogrammes de [Lucide](https://lucide.dev). L'interface est responsive et n'utilise aucun emoji.
+
 **Porte de qualité.** `npm run build` exécute `eslint`, puis `next typegen && tsc --noEmit`, puis `next build`. Vercel refuse donc tout déploiement qui contient une erreur de lint ou de type.
 
 **Gestion des erreurs.** Données invalides, quota atteint, panne ou saturation du modèle, réponse mal formée, échec de la file : chaque cas renvoie un message clair. Une panne de Geoapify ou de Resend n'interrompt jamais la génération. Les pages `error.tsx` et `not-found.tsx` évitent toute page blanche.

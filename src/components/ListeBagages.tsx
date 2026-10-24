@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { alerteErreur, carte } from "@/lib/ui";
+import { CircleAlert } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import { CATEGORIES_BAGAGES, type Bagage } from "@/lib/voyage";
 
 export default function ListeBagages({
@@ -13,14 +18,10 @@ export default function ListeBagages({
   const [erreur, setErreur] = useState("");
 
   const prets = bagages.filter((b) => b.checked).length;
-  const progression = bagages.length
-    ? Math.round((prets / bagages.length) * 100)
-    : 0;
+  const progression = bagages.length ? Math.round((prets / bagages.length) * 100) : 0;
 
   function modifierLocalement(id: string, checked: boolean) {
-    setBagages((liste) =>
-      liste.map((b) => (b.id === id ? { ...b, checked } : b)),
-    );
+    setBagages((liste) => liste.map((b) => (b.id === id ? { ...b, checked } : b)));
   }
 
   async function basculer(bagage: Bagage) {
@@ -43,58 +44,54 @@ export default function ListeBagages({
   }
 
   return (
-    <section className={`${carte} p-5`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">🎒 Bagages</h2>
-        <span className="text-sm text-slate-500">
-          {prets} / {bagages.length}
-        </span>
-      </div>
+    <Card className="rounded-2xl border py-6 ring-0">
+      <CardContent className="px-6">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-xl font-semibold">Bagages</h2>
+          <span className="text-sm text-muted-foreground">
+            {prets} sur {bagages.length}
+          </span>
+        </div>
 
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-        <div
-          className="h-full rounded-full bg-teal-500 transition-all"
-          style={{ width: `${progression}%` }}
-        />
-      </div>
+        <Progress value={progression} className="mt-3" aria-label="Bagages prêts" />
 
-      {erreur && <p className={`mt-4 ${alerteErreur}`}>{erreur}</p>}
+        {erreur && (
+          <Alert variant="destructive" className="mt-4 px-4 py-3">
+            <CircleAlert aria-hidden />
+            <AlertDescription>{erreur}</AlertDescription>
+          </Alert>
+        )}
 
-      <div className="mt-4 grid gap-5">
-        {CATEGORIES_BAGAGES.map((categorie) => {
-          const objets = bagages.filter((b) => b.category === categorie);
-          if (objets.length === 0) return null;
+        <div className="mt-5 grid gap-5">
+          {CATEGORIES_BAGAGES.map((categorie) => {
+            const objets = bagages.filter((b) => b.category === categorie);
+            if (objets.length === 0) return null;
 
-          return (
-            <div key={categorie}>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {categorie}
-              </h3>
-              <ul className="mt-2 grid gap-1">
-                {objets.map((objet) => (
-                  <li key={objet.id}>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm transition hover:bg-slate-50">
-                      <input
-                        type="checkbox"
-                        checked={objet.checked}
-                        onChange={() => basculer(objet)}
-                        className="h-4 w-4 accent-teal-600"
-                      />
-                      <span
-                        className={
-                          objet.checked ? "text-slate-400 line-through" : ""
-                        }
-                      >
-                        {objet.label}
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
-    </section>
+            return (
+              <div key={categorie}>
+                <h3 className="text-sm font-semibold">{categorie}</h3>
+                <ul className="mt-2 grid gap-0.5">
+                  {objets.map((objet) => (
+                    <li key={objet.id}>
+                      <label className="-mx-2 flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-muted">
+                        <Checkbox
+                          checked={objet.checked}
+                          onCheckedChange={() => basculer(objet)}
+                        />
+                        <span
+                          className={cn(objet.checked && "text-muted-foreground line-through")}
+                        >
+                          {objet.label}
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

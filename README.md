@@ -2,11 +2,11 @@
 
 ## Présentation
 
-Escapade est un planificateur de vacances. Un utilisateur connecté par lien magique saisit sa ville de départ, une destination, ses dates, un budget, le nombre de voyageurs et ses envies. Un modèle d'IA génère un itinéraire jour par jour (matin, après-midi, soir) qui cite des lieux et des restaurants réels de la destination, une estimation du budget complet (transport aller-retour, hébergement, dépenses sur place) et une liste de bagages à cocher. Chaque voyage est enregistré, rattaché à son auteur et consultable dans « Mes voyages ».
+Escapade est un planificateur de vacances. Un utilisateur connecté saisit sa ville de départ, une destination, ses dates, un budget, le nombre de voyageurs et ses envies. Un modèle d'IA génère un itinéraire jour par jour (matin, après-midi, soir) qui cite des lieux et des restaurants réels de la destination, une estimation du budget complet (transport aller-retour, hébergement, dépenses sur place) et une liste de bagages à cocher. Chaque voyage est enregistré, rattaché à son auteur et consultable dans « Mes voyages ».
 
 Fonctionnalités :
 
-- connexion sans mot de passe (lien magique) ;
+- connexion par e-mail et mot de passe, avec création de compte libre ;
 - création d'un voyage avec validation des données (dates cohérentes, 14 jours maximum, budget et voyageurs bornés) ;
 - génération asynchrone : la demande est acceptée immédiatement, l'itinéraire est produit en arrière-plan ;
 - itinéraire fondé sur des lieux réels : restaurants et sites de la destination récupérés dans OpenStreetMap, puis transmis au modèle ;
@@ -39,13 +39,15 @@ Infisical : secrets synchronisés vers Vercel et injectés en local
 | Service                | Rôle                                                                                                                 | Pourquoi                                                                                                                     |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | **Vercel**             | Hébergement Next.js, routes API serverless, déploiement continu depuis GitHub (`main` → production, `dev` → preview) | Intégration native avec Next.js, palier gratuit, environnements séparés                                                      |
-| **Supabase**           | Authentification par lien magique, base Postgres, Row Level Security, Realtime                                       | Auth, base et temps réel dans un seul service ; la RLS garantit l'isolement des données au niveau de la base                 |
+| **Supabase**           | Authentification par e-mail et mot de passe, base Postgres, Row Level Security, Realtime                             | Auth, base et temps réel dans un seul service ; la RLS garantit l'isolement des données au niveau de la base                 |
 | **Modèle d'IA (Groq)** | Génération de l'itinéraire et du budget, appelé uniquement côté serveur                                              | API compatible OpenAI, réponse JSON structurée, palier gratuit                                                               |
 | **Geoapify**           | Restaurants et sites réels de la destination (données OpenStreetMap), transmis au modèle avant la génération         | Évite les noms inventés par l'IA ; palier gratuit sans carte bancaire. En cas de panne, la génération continue sans liste    |
 | **Upstash Redis**      | Limitation de débit des appels au modèle (fenêtre glissante, par utilisateur)                                        | Compatible serverless (HTTP), palier gratuit                                                                                 |
 | **Upstash QStash**     | File de messages entre la création et le worker de génération                                                        | Découple la requête de l'utilisateur d'un traitement long ; nouvelles tentatives automatiques                                |
-| **Resend**             | E-mail « itinéraire prêt » et e-mails de connexion (SMTP de Supabase)                                                | API simple, palier gratuit, contourne la limite de 2 e-mails/heure de Supabase                                               |
+| **Resend**             | E-mail « itinéraire prêt » ; serveur SMTP de Supabase Auth                                                           | API simple, palier gratuit, contourne la limite de 2 e-mails/heure de Supabase                                               |
 | **Infisical**          | Source unique des secrets, synchronisée vers Vercel (Preview et Production) et injectée en local                     | Aucun secret dans le dépôt ni recopié à la main ; Staging et Production importent Development et ne redéfinissent que l'utile |
+
+**Authentification.** Le TD utilisait le lien magique. Sans domaine vérifié, Resend n'envoie qu'à l'adresse du compte, donc personne d'autre ne pourrait se connecter. L'application utilise donc la connexion par e-mail et mot de passe de Supabase Auth (8 caractères minimum), sans confirmation par e-mail. N'importe qui peut créer un compte et tester l'application. Les données restent isolées par la Row Level Security.
 
 **Brique 1 : QStash (génération asynchrone).** `POST /api/trips` valide la demande, vérifie le quota, enregistre le voyage avec le statut `pending`, publie un message QStash puis répond **202** immédiatement. QStash appelle le worker `/api/jobs/generer-voyage`, qui vérifie la signature du message (`verifySignatureAppRouter`), récupère les lieux réels de la destination (Geoapify), appelle le modèle, valide la réponse, enregistre les jours, les bagages et le budget, puis passe le voyage à `done`. Le worker est idempotent : un voyage déjà traité est ignoré, et une tentative partielle est nettoyée. En cas d'erreur passagère (quota du modèle, panne, délai dépassé), il répond 500 et QStash réessaie (3 fois). Après la dernière tentative, le voyage passe à `error` avec un message clair. Sur les déploiements Preview protégés de Vercel, le message porte l'en-tête `x-vercel-protection-bypass` (secret fourni par Vercel) pour atteindre le worker.
 
@@ -121,7 +123,7 @@ Prérequis : Node.js 20+, un compte sur chaque service (paliers gratuits) et la 
 - **Prix réels** : le transport et l'hébergement sont estimés par l'IA. Les API de réservation (vols, hôtels) sont réservées aux partenaires ou payantes ; les brancher donnerait des prix et des disponibilités réels.
 - **Popularité des lieux** : OpenStreetMap ne fournit ni notes ni avis. Les restaurants proposés existent, mais ils ne sont pas classés par qualité. Une source d'avis (TripAdvisor, Google Places) demanderait un compte de facturation.
 - **Données en temps réel** : ni météo, ni horaires d'ouverture, ni événements.
-- **E-mails** : sans domaine vérifié, Resend n'envoie qu'à l'adresse du compte (`onboarding@resend.dev`). Vérifier un domaine permettrait d'ouvrir l'application à tous.
+- **E-mails** : sans domaine vérifié, Resend n'envoie qu'à l'adresse du compte (`onboarding@resend.dev`). Les autres utilisateurs ne reçoivent donc pas l'e-mail « itinéraire prêt » (l'échec est journalisé sans bloquer la génération), et la confirmation d'adresse à l'inscription est désactivée. Vérifier un domaine lèverait ces deux limites.
 - **Quotas gratuits** : le palier gratuit de Groq limite le nombre de jetons par minute pour `gpt-oss-120b`. Plusieurs longs voyages générés en même temps peuvent être ralentis (QStash réessaie alors automatiquement).
 - **Édition** : impossible de régénérer une journée, de modifier une activité, d'ajouter un objet à la liste de bagages ou de supprimer un voyage depuis l'interface (la règle RLS de suppression est déjà en place).
 - **Atomicité** : l'enregistrement du résultat se fait en plusieurs requêtes (rendues sûres par l'idempotence du worker). Une fonction Postgres transactionnelle (RPC) serait plus robuste.

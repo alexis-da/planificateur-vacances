@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { CircleAlert, MailCheck } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -51,7 +50,6 @@ export default function FormulaireConnexion({
 }: {
   erreurLien: boolean;
 }) {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("connexion");
   const [email, setEmail] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
@@ -108,8 +106,7 @@ export default function FormulaireConnexion({
       return;
     }
 
-    router.push("/");
-    router.refresh();
+    window.location.assign("/");
   }
 
   if (confirmation) {

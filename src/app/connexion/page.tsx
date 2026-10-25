@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CalendarDays, Luggage, Mail, MapPin, Wallet } from "lucide-react";
+import { CalendarDays, LockKeyhole, Luggage, MapPin, Wallet } from "lucide-react";
 import FormulaireConnexion from "@/components/FormulaireConnexion";
 import { Card, CardContent } from "@/components/ui/card";
 import { creerClientServeur } from "@/lib/supabase/server";
@@ -73,9 +73,9 @@ export default async function Connexion({
         <CardContent className="px-8">
           <h2 className="text-2xl font-semibold tracking-tight">Connexion</h2>
           <p className="mt-2 flex gap-2 text-sm text-muted-foreground">
-            <Mail className="mt-0.5 size-4 shrink-0" aria-hidden />
-            Saisissez votre adresse e-mail : vous recevrez un lien pour vous connecter,
-            sans mot de passe.
+            <LockKeyhole className="mt-0.5 size-4 shrink-0" aria-hidden />
+            Connectez-vous ou créez un compte avec votre adresse e-mail et un mot de
+            passe.
           </p>
           <FormulaireConnexion erreurLien={erreur === "lien-invalide"} />
         </CardContent>

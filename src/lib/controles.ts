@@ -83,7 +83,7 @@ const controleBase: Controle = {
 
 const controleAuth: Controle = {
   service: "Supabase Auth",
-  description: "Connexion par lien magique",
+  description: "Connexion par e-mail et mot de passe",
   verifier: async () => {
     const supabase = creerClientAdmin();
     const { error } = await supabase.auth.admin.listUsers({
